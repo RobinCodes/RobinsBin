@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style/style.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <meta name="keywords" content="Privacy, Coding, Computing">
+    <meta property="og:image" content="https://i.postimg.cc/15cjKykw/logo.jpg"/>
+    <meta property="og:description" content="RobinsBin" />
+    <meta property="og:title" content="RobinsBin" />
+    <meta property="og:url" content="https://robincodes.netlify.app" />
+    <meta property="og:type" content="website" />
+    <title>RobinsBin</title>
+</head>
+
+<body>
+
+    <!-- popup window (for about) -->
+    <div id="Popup" class="popup">
+        <div class="popup-content">
+            <span class="close" onclick="ClosePopup()">&times;</span>
+            <h2 style="color: #fff; text-align: center;">Welcome to RobinsBin</h2>
+            <br>
+            <p style="color: #fff;">RobinsBin allows you to share data in a safe and secure way. RobinsBin Doesn't use a database and instead encrypt's your data with military grade encryption (AES-256) and stores it in the URL of the link.</p>
+            <br>
+            <p style="text-align: center; color: #fff;"><b>PLEASE NOTE THIS IS IN BETA !!!</b></p>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo">
+            <h1><a href="Index.html" style="text-decoration: none; color: #fff;">RobinsBin</a></h1>         
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="https://github.com/RobinCodes/">Source</a></li>
+                <li><a href="https://discord.gg/6pSR2Rcqeg">Discord</a></li>
+                <li><a href="#" onclick="OpenPopup()">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <p style="text-align: center; font-size: 20px; color: #fff;"><b>Paste Content Below</b></p>
+        <textarea id="pasteContent" placeholder="Enter text here..."></textarea>
+        <br>
+        <div class="container">
+            <p style="text-align: center; font-size: 20px; color: #fff;"><b>Paste Settings</b></p>
+            <br>
+            <h3 style="text-align: center; font-size: 16px; color: #fff;">Password For Paste</h3>
+            <input id="secret-key" placeholder="Enter your secret key..." type="password">
+            <br>
+            <br>
+            <button class="button button1" onclick="SavePaste()">Create New Paste !</button>
+            <br>
+            <h2 style="text-align: center; font-size: 20px; color: #fff;">Paste Link Below</h2>
+            <br>
+            <p id="PasteLink"></p>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 RobinsBin. All Rights Reserved.</p>
+    </footer>
+
+    <!-- code for encrypting text -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+
+    <!-- script for making paste's (might add it to an external file later)-->
+    <script>
+        let AES_SECRET_KEY;
+
+        // Encrypt the content using AES
+        function aesEncrypt(text, password) {
+            const ciphertext = CryptoJS.AES.encrypt(text, password).toString();
+            return ciphertext;
+        }
+
+        function aesDecrypt(ciphertext, password) {
+            const bytes = CryptoJS.AES.decrypt(ciphertext, password);
+            const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
+            return decryptedText;
+        }
+
+        function SavePaste() {
+            const pasteContent = document.getElementById('pasteContent').value;
+            const password = document.getElementById('secret-key').value;
+
+            if (!password) {
+                alert("Please enter a password.");
+                return;
+            }
+
+            // Encrypt the content with AES-256
+            const encryptedContent = aesEncrypt(pasteContent, password);
+
+            const newUrl = window.location.origin + window.location.pathname + '?paste=' + encodeURIComponent(encryptedContent);
+
+            window.history.pushState({path: newUrl}, '', newUrl);
+            alert("Paste Has Been Made!");
+
+            // Display the link for sharing
+            const PasteLinkElement = document.getElementById('PasteLink');
+            if (PasteLinkElement) {
+                PasteLinkElement.innerHTML = '<a style="font-size: 20px;" href="' + newUrl + '" target="_blank">' + newUrl + '</a>';
+
+                // this copies the link to clipboard
+                setTimeout(() => {//get it to wait for a second to make sure that the tex has been output
+                    const CopyLink = document.getElementById("PasteLink").innerText;
+                    
+                    navigator.clipboard.writeText(CopyLink).then(() => {
+                        alert("Link has also been copied to clipboard!");
+                    }).catch(err => {
+                        console.error("Error copying text to clipboard");
+                    });
+                }, 500);  
+            }
+        }
+
+        function loadPasteFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paste = urlParams.get('paste');
+            
+            if (paste) {
+                // Prompt for the password
+                const enteredPassword = prompt("Please enter the password to view the paste:");
+                
+                if (enteredPassword) {
+                    // Decrypt stuff using password
+                    const decryptedContent = aesDecrypt(decodeURIComponent(paste), enteredPassword);
+                    
+                    if (decryptedContent) {
+                        document.getElementById('pasteContent').value = decryptedContent; // Display the decrypted content
+                    } else {
+                        alert("Incorrect password, try again.");
+                    }
+                } else {
+                    alert("Password is required to view the paste.");
+                }
+            }
+        }
+
+        window.onload = function() {
+            loadPasteFromUrl();
+        }
+    </script>
+    <script src="js/script.js"></script>
+</body>
+</html>
